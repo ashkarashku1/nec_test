@@ -1,0 +1,156 @@
+<html>
+    <head>
+        <title>Analysis</title>
+    </head>
+    <body>
+        <div id="app" class=" flex-col text-[12px] px-2 py-2">
+            <!-- Category Head container -->
+            <div class="text-right py-2">
+                <b>Sales Period: </b>
+                {{ salesPeriod }}
+            </div>
+            <div>
+
+                <!-- category head -->
+                <div class="flex flex-row py-3 border border-t-0 border-x-0 border-[#10B98E]">
+                    <div class="px-1 w-24 text-[#10B98E]">
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="text-center text-[#10B98E]">Category</div>
+                    </div>
+                    <div class="px-1 w-24 text-[#10B98E]">&nbsp;</div>
+                    <div class="px-1 w-24 text-center" v-for="analysis in categoryAnalysisWeekly[0]?.attrs">
+                        <div class="text-center text-[#10B98E] py-2">W{{ analysis.weekNumber }}</div>
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div>{{ analysis.fromDate | date_filter }} - {{ analysis.toDate | date_filter }}</div>
+                    </div>
+
+                    <div class="px-1 text-center w-24" v-for="weather in weatherData">
+                        <div class=" py-2">{{ weather.wthrDte | date_filter }}</div>
+                        <div class=" py-2">{{ weather.wthrDte | week_title }}</div>
+                        <div class=" py-2">&nbsp;</div>
+                        <div class=" py-2">{{ weather.hiTempNum }}&#176;/{{ weather.loTempNum }}&#176;</div>
+                    </div>
+
+                    
+                    <div class="px-1 text-center w-24 text-[#10B98E]">
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="text-center text-[#10B98E] py-2">&nbsp;</div>
+                        <div class="px-1 w-24 py-2">Sales % Total</div>
+                        <div class="px-1 w-24 py-2">WOs % Total</div>
+                    </div>
+                </div>
+
+                <!-- PSA -->
+                <div class="flex flex-row py-3 border border-t-0 border-x-0 border-[#10B98E]">
+                    <div class="pl-1 w-24 text-[#10B98E]">PSA Total</div>
+                    <div class="pr-1 w-24 text-[#10B98E]">
+                        <div class="py-1">sales</div>
+                        <div class="py-1">WOs</div>
+                    </div>
+                    <div class="px-1 w-24 text-center text-[#10B98E]" v-for="(analysis, index) in categoryAnalysisWeekly[0]?.attrs">
+                        <div class="py-1">{{ totalPsaSales(index) }}</div>
+                        <div class="py-1">{{ totalPsaWriteOffs(index) }}</div>
+                    </div>
+
+                    <div class="px-1 text-center w-24" v-for="weather in weatherData">
+                        <div class=" py-1">-</div>
+                        <div class=" py-1">-</div>
+                    </div>
+
+                </div>
+
+                <!-- Category Wise -->
+                <div class="flex flex-row py-3" v-for="category in categoryAnalysisWeekly">
+                    <div class="pl-1 w-24">
+                        <input type="radio" name="category" />
+                        {{category.categoryDescription}}
+                    </div>
+                    <div class="pr-1 w-24 text-[#10B98E]">
+                        <div class="py-1">Del</div>
+                        <div class="py-1">Sales</div>
+                        <div class="py-1">WO's</div>
+                    </div>
+                    <div class="px-1 w-24 text-center" v-for="analysis in category.attrs">
+                        <div class="py-1">{{ analysis.deliveries }}</div>
+                        <div class="py-1">{{ analysis.sales }}</div>
+                        <div class="py-1">{{ analysis.writeOffs }}</div>
+                    </div>
+
+                    <div class="px-1 text-center w-24" v-for="weather in weatherData">
+                        <div class=" py-1">-</div>
+                        <div class=" py-1">-</div>
+                        <div class=" py-1">-</div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            new Vue({ 
+                el: '#app',
+                data: {
+                    demo: "title",
+                    categoryAnalysisDaily: [],
+                    categoryAnalysisWeekly: [],
+                    salesPeriod: '',
+                    weatherData: [],
+                },
+                methods: {
+                    totalPsaSales(index) {
+                        let total = 0
+                        for(category of this.categoryAnalysisWeekly)
+                            total += Number(category.attrs[index].psaTotalSales)
+                        return total
+                    },
+                    totalPsaWriteOffs(index) {
+                        let total = 0
+                        for(category of this.categoryAnalysisWeekly)
+                            total += Number(category.attrs[index].psaTotalWriteOffs)
+                        return total
+                    },
+                },
+                async created() {
+                    const sample_json = await fetch("sample.json")
+                    const sample_arr = await sample_json.json()
+                    analysis_data = sample_arr.response
+                    this.categoryAnalysisDaily = [...analysis_data.categoryAnalysisDaily]
+                    categoryAnalysisWeekly = []
+                    let category_index = ''
+                    analysis_data.categoryAnalysisWeekly.sort((first, second) => {
+                        return first.categoryCode - second.categoryCode
+                    }).sort((first, second) => {
+                        return second.weekNumber - first.weekNumber
+                    })
+                    for(val of analysis_data.categoryAnalysisWeekly) {
+                        if(!categoryAnalysisWeekly.find(category => {return category.categoryCode === val.categoryCode})) {
+                            categoryAnalysisWeekly.push({categoryCode: val.categoryCode, categoryDescription: val.categoryDescription, attrs: []})
+                            category_index = categoryAnalysisWeekly.findIndex(category => {return category.categoryCode === val.categoryCode})
+                            categoryAnalysisWeekly[category_index].attrs.push(val)
+                        } else {
+                            category_index = categoryAnalysisWeekly.findIndex(category => {return category.categoryCode === val.categoryCode})
+                            categoryAnalysisWeekly[category_index].attrs.push(val)
+                        }
+                    }
+                    this.categoryAnalysisWeekly = categoryAnalysisWeekly
+                    this.salesPeriod = analysis_data.salesPeriod
+                    this.weatherData = [...analysis_data.weatherData]
+                },
+            })
+
+            Vue.filter('date_filter', function (value) {
+                var str = value.split("-");
+                return str[1] + '/' + str[2][0] + '' + str[2][1]
+            })
+
+            Vue.filter('week_title', function (value) {
+                return (new Date(value)).toDateString().split(' ')[0]
+            })
+        </script>
+    </body>
+</html>
